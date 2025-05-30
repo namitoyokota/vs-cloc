@@ -19,7 +19,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
         // Add a refresh button at the top of the sidebar
         if (!element) {
-            const refreshItem = new vscode.TreeItem('🔄 Refresh', vscode.TreeItemCollapsibleState.None);
+            const refreshItem = new vscode.TreeItem('Refresh', vscode.TreeItemCollapsibleState.None);
             refreshItem.command = {
                 command: 'vs-cloc.refreshCloc',
                 title: 'Refresh cloc results',
@@ -63,11 +63,10 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             this.refresh();
             return;
         }
-        this.clocOutput = ['Cloc started...'];
         this.running = true;
         this.refresh();
-        // Use --gitignore to ignore files/directories ignored by git
-        const proc = exec('npx cloc --json .', { cwd: workspaceFolder });
+        // Use --vcs=git to only count files tracked by git
+        const proc = exec('npx cloc --json --vcs=git .', { cwd: workspaceFolder });
         let stdout = '';
         console.log('CLOC: cloc process started with cwd:', workspaceFolder);
         if (proc.stdout) {
@@ -89,13 +88,14 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 const jsonEnd = stdout.lastIndexOf('}') + 1;
                 const jsonStr = stdout.slice(0, jsonEnd);
                 const result = JSON.parse(jsonStr);
-                // Format the output for the sidebar
+                // Simplified output: number of files and lines of code per file type, with commas
+                const formatNumber = (n: number) => n.toLocaleString();
                 this.clocOutput = Object.entries(result)
                     .filter(([key]) => key !== 'header' && key !== 'SUM')
-                    .map(([lang, stats]) => `${lang}: ${(stats as any)['code'] ?? 0} code, ${(stats as any)['comment'] ?? 0} comments, ${(stats as any)['blank'] ?? 0} blank`);
+                    .map(([lang, stats]) => `${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files, ${formatNumber((stats as any)['code'] ?? 0)} lines`);
                 // Add summary if available
                 if (result['SUM']) {
-                    this.clocOutput.push(`Total files: ${result['SUM']['nFiles']}, Total code: ${result['SUM']['code']}`);
+                    this.clocOutput.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}, Total lines: ${formatNumber(result['SUM']['code'])}`);
                 }
                 if (this.clocOutput.length === 0) {
                     this.clocOutput = ['No code files found.'];
