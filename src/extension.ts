@@ -25,6 +25,18 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register the sidebar provider
 	const sidebarProvider = new ClocSidebarProvider();
 	vscode.window.registerTreeDataProvider('vsClocSidebar', sidebarProvider);
+
+	const runClocDisposable = vscode.commands.registerCommand('vs-cloc.runCloc', () => {
+		sidebarProvider.runCloc();
+		vscode.window.showInformationMessage('Running cloc...');
+	});
+	context.subscriptions.push(runClocDisposable);
+
+	const refreshClocDisposable = vscode.commands.registerCommand('vs-cloc.refreshCloc', () => {
+		sidebarProvider.runCloc();
+		vscode.window.showInformationMessage('Cloc results refreshed!');
+	});
+	context.subscriptions.push(refreshClocDisposable);
 }
 
 // This method is called when your extension is deactivated
