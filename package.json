@@ -17,7 +17,24 @@
         "command": "vs-cloc.helloWorld",
         "title": "Hello World"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vsClocSidebarContainer",
+          "title": "vs-cloc",
+          "icon": "resources/cloc.svg"
+        }
+      ]
+    },
+    "views": {
+      "vsClocSidebarContainer": [
+        {
+          "id": "vsClocSidebar",
+          "name": "CLOC Results"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
