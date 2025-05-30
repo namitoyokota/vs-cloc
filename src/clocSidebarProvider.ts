@@ -66,6 +66,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         this.clocOutput = ['Cloc started...'];
         this.running = true;
         this.refresh();
+        // Use --gitignore to ignore files/directories ignored by git
         const proc = exec('npx cloc --json .', { cwd: workspaceFolder });
         let stdout = '';
         console.log('CLOC: cloc process started with cwd:', workspaceFolder);
@@ -103,6 +104,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 this.clocOutput = ['Error parsing cloc output:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
             }
             this.refresh();
+            vscode.window.showInformationMessage('Cloc results updated!');
         });
         proc.on('error', (err) => {
             console.log('CLOC: cloc process error:', err);
