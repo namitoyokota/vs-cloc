@@ -17,24 +17,24 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        // Remove the refresh button from the tree; use view/title button instead
+        // If no element, return the root collapsible 'Files' item
         if (!element) {
+            const filesRoot = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Expanded);
+            filesRoot.id = 'filesRoot';
+            filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
+            return Promise.resolve([filesRoot]);
+        }
+        // If the element is the 'Files' root, return the cloc items
+        if (element.label === 'Files' && element.id === 'filesRoot') {
             return Promise.resolve(this.getClocItems());
         }
         return Promise.resolve([]);
     }
 
     getClocItems(): vscode.TreeItem[] {
-        if (this.running) {
-            return [
-                new vscode.TreeItem('Running cloc...'),
-                ...this.clocOutput.map(line => new vscode.TreeItem(line))
-            ];
-        }
-        if (this.clocOutput.length === 0) {
-            return [
-                new vscode.TreeItem('No cloc output yet.')
-            ];
+        // Only show actual cloc results, not status messages
+        if (this.running || this.clocOutput.length === 0) {
+            return [];
         }
         return this.clocOutput.map(line => new vscode.TreeItem(line));
     }
