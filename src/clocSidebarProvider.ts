@@ -45,14 +45,58 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.fileCounts.length === 0) {
             return [];
         }
-        return this.fileCounts.map(line => new vscode.TreeItem(line));
+        // Improved: parse fileCounts to label/description, non-clickable, non-selectable
+        return this.fileCounts.map(line => {
+            // Expecting format: "Language: 1,234 files" or "Total files: 1,234"
+            const match = line.match(/^(.*?): (.*?) files?$/i);
+            let label = line, description = '';
+            if (match) {
+                label = match[1];
+                description = match[2] + ' files';
+            }
+            // Special handling for total
+            if (/^Total files:/i.test(line)) {
+                label = 'Total';
+                description = line.replace(/^Total files: /i, '') + ' files';
+            }
+            const item = new vscode.TreeItem(label);
+            item.description = description;
+            item.command = undefined;
+            // Optionally, add a file icon for each language (skip for Total)
+            if (label !== 'Total') {
+                item.iconPath = new vscode.ThemeIcon('symbol-file');
+            }
+            return item;
+        });
     }
 
     getLineCountItems(): vscode.TreeItem[] {
         if (this.running || this.lineCounts.length === 0) {
             return [];
         }
-        return this.lineCounts.map(line => new vscode.TreeItem(line));
+        // Improved: parse lineCounts to label/description, non-clickable, non-selectable
+        return this.lineCounts.map(line => {
+            // Expecting format: "Language: 1,234 lines" or "Total lines: 1,234"
+            const match = line.match(/^(.*?): (.*?) lines?$/i);
+            let label = line, description = '';
+            if (match) {
+                label = match[1];
+                description = match[2] + ' lines';
+            }
+            // Special handling for total
+            if (/^Total lines:/i.test(line)) {
+                label = 'Total';
+                description = line.replace(/^Total lines: /i, '') + ' lines';
+            }
+            const item = new vscode.TreeItem(label);
+            item.description = description;
+            item.command = undefined;
+            // Optionally, add a code icon for each language (skip for Total)
+            if (label !== 'Total') {
+                item.iconPath = new vscode.ThemeIcon('symbol-method');
+            }
+            return item;
+        });
     }
 
     refresh(): void {
