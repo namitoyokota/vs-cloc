@@ -167,10 +167,9 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     runCloc() {
-        console.log('CLOC: runCloc: started');
+        // Only log key lifecycle points
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspaceFolder) {
-            console.log('CLOC: No workspace folder found. Aborting cloc run.');
             this.clocOutput = ['No workspace folder found. Please open a folder in VS Code.'];
             this.running = false;
             this.refresh();
@@ -178,31 +177,20 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         }
         this.running = true;
         this.refresh();
-        // Use --vcs=git to only count files tracked by git
         const proc = exec('npx cloc --json --vcs=git .', { cwd: workspaceFolder });
         let stdout = '';
-        console.log('CLOC: cloc process started with cwd:', workspaceFolder);
-        if (proc.stdout) {
-            proc.stdout.on('data', (data) => {
-                console.log('CLOC: cloc stdout data:', data);
-                stdout += data;
-                // Optionally show a progress message
-                this.clocOutput = ['Cloc is running...'];
-                this.refresh();
-            });
-        } else {
-            console.log('CLOC: proc.stdout is null');
-        }
+        proc.stdout?.on('data', (data) => {
+            stdout += data;
+            this.clocOutput = ['Cloc is running...'];
+            this.refresh();
+        });
         proc.on('close', (code) => {
-            console.log('CLOC: cloc process closed with code:', code);
             this.running = false;
-            // Try to parse JSON output
             try {
                 const jsonEnd = stdout.lastIndexOf('}') + 1;
                 const jsonStr = stdout.slice(0, jsonEnd);
                 const result = JSON.parse(jsonStr);
                 const formatNumber = (n: number) => n.toLocaleString();
-                // Separate file and line counts for each language
                 this.fileCounts = [];
                 this.lineCounts = [];
                 Object.entries(result)
@@ -211,7 +199,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                         this.fileCounts.push(`${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files`);
                         this.lineCounts.push(`${lang}: ${formatNumber((stats as any)['code'] ?? 0)} lines`);
                     });
-                // Add summary if available
                 if (result['SUM']) {
                     this.fileCounts.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}`);
                     this.lineCounts.push(`Total lines: ${formatNumber(result['SUM']['code'])}`);
@@ -227,7 +214,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             vscode.window.showInformationMessage('Cloc results updated!');
         });
         proc.on('error', (err) => {
-            console.log('CLOC: cloc process error:', err);
             this.running = false;
             this.clocOutput = ['Error running cloc:', err.message];
             this.refresh();
