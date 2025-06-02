@@ -20,23 +20,43 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        // If no element, return the root collapsible 'Files' and 'Lines' items
+        // If no element, return the root sections: Tottal, Files, and Lines
         if (!element) {
+            const tottalRoot = new vscode.TreeItem('Tottal', vscode.TreeItemCollapsibleState.Expanded);
+            tottalRoot.id = 'tottalRoot';
+            tottalRoot.iconPath = new vscode.ThemeIcon('repo');
             const filesRoot = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Expanded);
             filesRoot.id = 'filesRoot';
             filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
-            // Use a built-in icon for lines section (e.g., 'note' for code)
             const linesRoot = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.Expanded);
             linesRoot.id = 'linesRoot';
             linesRoot.iconPath = new vscode.ThemeIcon('note');
-            return Promise.resolve([filesRoot, linesRoot]);
+            return Promise.resolve([tottalRoot, filesRoot, linesRoot]);
         }
-        // If the element is the 'Files' root, return the file count items
-        if (element.label === 'Files' && element.id === 'filesRoot') {
+        // If the element is the 'Tottal' root, return the Files and Lines properties with totals
+        if (element.label === 'Tottal' && element.id === 'tottalRoot') {
+            const totalFiles = this.fileCounts.find(l => /^Total files:/i.test(l));
+            const totalLines = this.lineCounts.find(l => /^Total lines:/i.test(l));
+            const filesProp = new vscode.TreeItem(
+                `Files: ${totalFiles ? totalFiles.replace(/^Total files: /i, '') : '0'}`,
+                vscode.TreeItemCollapsibleState.None
+            );
+            filesProp.id = 'tottalFiles';
+            filesProp.iconPath = new vscode.ThemeIcon('file-directory');
+            const linesProp = new vscode.TreeItem(
+                `Lines: ${totalLines ? totalLines.replace(/^Total lines: /i, '') : '0'}`,
+                vscode.TreeItemCollapsibleState.None
+            );
+            linesProp.id = 'tottalLines';
+            linesProp.iconPath = new vscode.ThemeIcon('note');
+            return Promise.resolve([filesProp, linesProp]);
+        }
+        // If the element is the 'Files' root, return the file count items (excluding total)
+        if (element.id === 'filesRoot') {
             return Promise.resolve(this.getFileCountItems());
         }
-        // If the element is the 'Lines' root, return the line count items
-        if (element.label === 'Lines' && element.id === 'linesRoot') {
+        // If the element is the 'Lines' root, return the line count items (excluding total)
+        if (element.id === 'linesRoot') {
             return Promise.resolve(this.getLineCountItems());
         }
         return Promise.resolve([]);
@@ -46,8 +66,9 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.fileCounts.length === 0) {
             return [];
         }
+        // Exclude the total line from the list
+        let filtered = this.fileCounts.filter(l => !/^Total files:/i.test(l));
         // Apply filter if set
-        let filtered = this.fileCounts;
         if (this.filter && this.filter.trim() !== '') {
             const filterLower = this.filter.toLowerCase();
             filtered = filtered.filter(line => {
@@ -57,17 +78,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 }
                 return true;
             });
-            // Always include the Total line if present
-            const total = this.fileCounts.find(l => /^Total files:/i.test(l));
-            if (total && !filtered.includes(total)) {
-                filtered.push(total);
-            }
-        }
-        // Sort by file count descending, keep 'Total' at the end
-        const totalIdx = filtered.findIndex(l => /^Total files:/i.test(l));
-        let totalLine: string | undefined = undefined;
-        if (totalIdx !== -1) {
-            totalLine = filtered.splice(totalIdx, 1)[0];
         }
         filtered.sort((a, b) => {
             const aMatch = a.match(/^(.*?): ([\d,]+) files?$/i);
@@ -79,24 +89,17 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             }
             return 0;
         });
-        if (totalLine) { filtered.push(totalLine); }
         return filtered.map(line => {
-            // Improved: parse fileCounts to label/description, non-clickable, non-selectable
+            // ...existing code for mapping line to TreeItem...
             const match = line.match(/^(.*?): (.*?) files?$/i);
             let label = line, description = '';
             if (match) {
                 label = match[1];
                 description = match[2] + ' files';
             }
-            // Special handling for total
-            if (/^Total files:/i.test(line)) {
-                label = 'Total';
-                description = line.replace(/^Total files: /i, '') + ' files';
-            }
             const item = new vscode.TreeItem(label);
             item.description = description;
             item.command = undefined;
-            // Optionally, add a file icon for each language (skip for Total)
             if (label !== 'Total') {
                 item.iconPath = new vscode.ThemeIcon('symbol-file');
             }
@@ -108,8 +111,9 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.lineCounts.length === 0) {
             return [];
         }
+        // Exclude the total line from the list
+        let filtered = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
         // Apply filter if set
-        let filtered = this.lineCounts;
         if (this.filter && this.filter.trim() !== '') {
             const filterLower = this.filter.toLowerCase();
             filtered = filtered.filter(line => {
@@ -119,17 +123,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 }
                 return true;
             });
-            // Always include the Total line if present
-            const total = this.lineCounts.find(l => /^Total lines:/i.test(l));
-            if (total && !filtered.includes(total)) {
-                filtered.push(total);
-            }
-        }
-        // Sort by line count descending, keep 'Total' at the end
-        const totalIdx = filtered.findIndex(l => /^Total lines:/i.test(l));
-        let totalLine: string | undefined = undefined;
-        if (totalIdx !== -1) {
-            totalLine = filtered.splice(totalIdx, 1)[0];
         }
         filtered.sort((a, b) => {
             const aMatch = a.match(/^(.*?): ([\d,]+) lines?$/i);
@@ -141,24 +134,17 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             }
             return 0;
         });
-        if (totalLine) { filtered.push(totalLine); }
         return filtered.map(line => {
-            // Improved: parse lineCounts to label/description, non-clickable, non-selectable
+            // ...existing code for mapping line to TreeItem...
             const match = line.match(/^(.*?): (.*?) lines?$/i);
             let label = line, description = '';
             if (match) {
                 label = match[1];
                 description = match[2] + ' lines';
             }
-            // Special handling for total
-            if (/^Total lines:/i.test(line)) {
-                label = 'Total';
-                description = line.replace(/^Total lines: /i, '') + ' lines';
-            }
             const item = new vscode.TreeItem(label);
             item.description = description;
             item.command = undefined;
-            // Optionally, add a code icon for each language (skip for Total)
             if (label !== 'Total') {
                 item.iconPath = new vscode.ThemeIcon('note');
             }
