@@ -20,13 +20,25 @@ enum ClocTree {
  * Supports filtering, sorting, and summary statistics for files and lines per language.
  */
 export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
+	/** Emits events to refresh the TreeView. */
 	private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | void> = new vscode.EventEmitter();
+
+	/** Event to notify VS Code when the TreeView should refresh. */
 	readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
+	/** Stores the latest cloc output or error messages. */
 	private clocOutput: string[] = [];
+
+	/** True if cloc is currently running. */
 	private running: boolean = false;
+
+	/** Stores the per-language file counts as formatted strings. */
 	private fileCounts: string[] = [];
+
+	/** Stores the per-language line counts as formatted strings. */
 	private lineCounts: string[] = [];
+
+	/** Current filter string for language search, or undefined for no filter. */
 	private filter: string | undefined = undefined;
 
 	constructor() {

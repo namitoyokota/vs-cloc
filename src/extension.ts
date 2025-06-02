@@ -1,6 +1,10 @@
 import * as vscode from 'vscode';
 import { ClocSidebarProvider } from './clocSidebarProvider';
 
+/**
+ * Called when your extension is activated. Registers commands and the cloc sidebar provider.
+ * @param context The VS Code extension context for managing disposables and state.
+ */
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "vs-cloc" is now active!');
 
@@ -24,5 +28,3 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(refreshClocDisposable);
 }
-
-export function deactivate() {}
