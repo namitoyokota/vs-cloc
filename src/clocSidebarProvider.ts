@@ -30,7 +30,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
             const linesRoot = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.Expanded);
             linesRoot.id = 'linesRoot';
-            linesRoot.iconPath = new vscode.ThemeIcon('note');
+            linesRoot.iconPath = new vscode.ThemeIcon('file-code');
             return Promise.resolve([tottalRoot, filesRoot, linesRoot]);
         }
         // If the element is the 'Tottal' root, return the Files and Lines properties with totals
@@ -48,7 +48,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 vscode.TreeItemCollapsibleState.None
             );
             linesProp.id = 'tottalLines';
-            linesProp.iconPath = new vscode.ThemeIcon('note');
+            linesProp.iconPath = new vscode.ThemeIcon('file-code');
             return Promise.resolve([filesProp, linesProp]);
         }
         // If the element is the 'Files' root, return the file count items (excluding total)
