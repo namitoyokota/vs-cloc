@@ -20,7 +20,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        // If no element, return the root sections: Tottal, Files, and Lines
         if (!element) {
             const tottalRoot = new vscode.TreeItem('Tottal', vscode.TreeItemCollapsibleState.Expanded);
             tottalRoot.id = 'tottalRoot';
@@ -33,7 +32,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             linesRoot.iconPath = new vscode.ThemeIcon('file-code');
             return Promise.resolve([tottalRoot, filesRoot, linesRoot]);
         }
-        // If the element is the 'Tottal' root, return the Files and Lines properties with totals
         if (element.label === 'Tottal' && element.id === 'tottalRoot') {
             const totalFiles = this.fileCounts.find(l => /^Total files:/i.test(l));
             const totalLines = this.lineCounts.find(l => /^Total lines:/i.test(l));
@@ -51,11 +49,9 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             linesProp.iconPath = new vscode.ThemeIcon('file-code');
             return Promise.resolve([filesProp, linesProp]);
         }
-        // If the element is the 'Files' root, return the file count items (excluding total)
         if (element.id === 'filesRoot') {
             return Promise.resolve(this.getFileCountItems());
         }
-        // If the element is the 'Lines' root, return the line count items (excluding total)
         if (element.id === 'linesRoot') {
             return Promise.resolve(this.getLineCountItems());
         }
@@ -66,9 +62,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.fileCounts.length === 0) {
             return [];
         }
-        // Exclude the total line from the list
         let filtered = this.fileCounts.filter(l => !/^Total files:/i.test(l));
-        // Apply filter if set
         if (this.filter && this.filter.trim() !== '') {
             const filterLower = this.filter.toLowerCase();
             filtered = filtered.filter(line => {
@@ -90,7 +84,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             return 0;
         });
         return filtered.map(line => {
-            // ...existing code for mapping line to TreeItem...
             const match = line.match(/^(.*?): (.*?) files?$/i);
             let label = line, description = '';
             if (match) {
@@ -111,9 +104,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.lineCounts.length === 0) {
             return [];
         }
-        // Exclude the total line from the list
         let filtered = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
-        // Apply filter if set
         if (this.filter && this.filter.trim() !== '') {
             const filterLower = this.filter.toLowerCase();
             filtered = filtered.filter(line => {
@@ -135,7 +126,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             return 0;
         });
         return filtered.map(line => {
-            // ...existing code for mapping line to TreeItem...
             const match = line.match(/^(.*?): (.*?) lines?$/i);
             let label = line, description = '';
             if (match) {
@@ -167,7 +157,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     runCloc() {
-        // Only log key lifecycle points
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
         if (!workspaceFolder) {
             this.clocOutput = ['No workspace folder found. Please open a folder in VS Code.'];
