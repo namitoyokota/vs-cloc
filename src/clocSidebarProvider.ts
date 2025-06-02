@@ -16,6 +16,17 @@ enum ClocTree {
 }
 
 /**
+ * Enum for all icon names used in the TreeView.
+ */
+enum ClocIcon {
+	Repo = 'repo',
+	FileDirectory = 'file-directory',
+	FileCode = 'file-code',
+	SymbolFile = 'symbol-file',
+	Note = 'note',
+}
+
+/**
  * Provides a TreeView sidebar for displaying cloc (Count Lines of Code) results in VS Code.
  * Supports filtering, sorting, and summary statistics for files and lines per language.
  */
@@ -63,15 +74,15 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 		if (!element) {
 			const totalRoot = new vscode.TreeItem(ClocTree.TotalRootLabel, vscode.TreeItemCollapsibleState.Expanded);
 			totalRoot.id = ClocTree.TotalRootId;
-			totalRoot.iconPath = new vscode.ThemeIcon('repo');
+			totalRoot.iconPath = new vscode.ThemeIcon(ClocIcon.Repo);
 
 			const filesRoot = new vscode.TreeItem(ClocTree.FilesRootLabel, vscode.TreeItemCollapsibleState.Expanded);
 			filesRoot.id = ClocTree.FilesRootId;
-			filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
+			filesRoot.iconPath = new vscode.ThemeIcon(ClocIcon.FileDirectory);
 
 			const linesRoot = new vscode.TreeItem(ClocTree.LinesRootLabel, vscode.TreeItemCollapsibleState.Expanded);
 			linesRoot.id = ClocTree.LinesRootId;
-			linesRoot.iconPath = new vscode.ThemeIcon('file-code');
+			linesRoot.iconPath = new vscode.ThemeIcon(ClocIcon.FileCode);
 
 			return Promise.resolve([totalRoot, filesRoot, linesRoot]);
 		}
@@ -85,14 +96,14 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 				vscode.TreeItemCollapsibleState.None
 			);
 			filesProp.id = ClocTree.TotalFilesId;
-			filesProp.iconPath = new vscode.ThemeIcon('file-directory');
+			filesProp.iconPath = new vscode.ThemeIcon(ClocIcon.FileDirectory);
 
 			const linesProp = new vscode.TreeItem(
 				`Lines: ${totalLines ? totalLines.replace(/^Total lines: /i, '') : '0'}`,
 				vscode.TreeItemCollapsibleState.None
 			);
 			linesProp.id = ClocTree.TotalLinesId;
-			linesProp.iconPath = new vscode.ThemeIcon('file-code');
+			linesProp.iconPath = new vscode.ThemeIcon(ClocIcon.FileCode);
 
 			return Promise.resolve([filesProp, linesProp]);
 		}
@@ -126,6 +137,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 				if (match) {
 					return match[1].toLowerCase().includes(filterLower);
 				}
+
 				return true;
 			});
 		}
@@ -133,27 +145,33 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 		filtered.sort((a, b) => {
 			const aMatch = a.match(/^(.*?): ([\d,]+) files?$/i);
 			const bMatch = b.match(/^(.*?): ([\d,]+) files?$/i);
+
 			if (aMatch && bMatch) {
 				const aNum = parseInt(aMatch[2].replace(/,/g, ''));
 				const bNum = parseInt(bMatch[2].replace(/,/g, ''));
 				return bNum - aNum;
 			}
+
 			return 0;
 		});
 
 		return filtered.map(line => {
 			const match = line.match(/^(.*?): (.*?) files?$/i);
 			let label = line, description = '';
+
 			if (match) {
 				label = match[1];
 				description = match[2] + ' files';
 			}
+
 			const item = new vscode.TreeItem(label);
 			item.description = description;
 			item.command = undefined;
+
 			if (label !== 'Total') {
-				item.iconPath = new vscode.ThemeIcon('symbol-file');
+				item.iconPath = new vscode.ThemeIcon(ClocIcon.SymbolFile);
 			}
+
 			return item;
 		});
 	}
@@ -176,6 +194,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 				if (match) {
 					return match[1].toLowerCase().includes(filterLower);
 				}
+
 				return true;
 			});
 		}
@@ -183,26 +202,31 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 		filtered.sort((a, b) => {
 			const aMatch = a.match(/^(.*?): ([\d,]+) lines?$/i);
 			const bMatch = b.match(/^(.*?): ([\d,]+) lines?$/i);
-			if (aMatch && bMatch) {
+
+      if (aMatch && bMatch) {
 				const aNum = parseInt(aMatch[2].replace(/,/g, ''));
 				const bNum = parseInt(bMatch[2].replace(/,/g, ''));
 				return bNum - aNum;
 			}
+
 			return 0;
 		});
 
 		return filtered.map(line => {
 			const match = line.match(/^(.*?): (.*?) lines?$/i);
 			let label = line, description = '';
+
 			if (match) {
 				label = match[1];
 				description = match[2] + ' lines';
 			}
+
 			const item = new vscode.TreeItem(label);
 			item.description = description;
 			item.command = undefined;
+
 			if (label !== 'Total') {
-				item.iconPath = new vscode.ThemeIcon('note');
+				item.iconPath = new vscode.ThemeIcon(ClocIcon.Note);
 			}
 			return item;
 		});
@@ -252,7 +276,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 
 		proc.stdout?.on('data', (data) => {
 			stdout += data;
-			this.clocOutput = ['Cloc is running...'];
+			this.clocOutput = ['Counting lines of code...'];
 			this.refresh();
 		});
 
@@ -271,19 +295,22 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 						this.fileCounts.push(`${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files`);
 						this.lineCounts.push(`${lang}: ${formatNumber((stats as any)['code'] ?? 0)} lines`);
 					});
+
 				if (result['SUM']) {
 					this.fileCounts.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}`);
 					this.lineCounts.push(`Total lines: ${formatNumber(result['SUM']['code'])}`);
 				}
+
 				if (this.fileCounts.length === 0 && this.lineCounts.length === 0) {
 					this.fileCounts = ['No code files found.'];
 				}
 			} catch (e) {
-				this.fileCounts = ['Error parsing cloc output:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
+				this.fileCounts = ['Error parsing counter:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
 				this.lineCounts = [];
 			}
+
 			this.refresh();
-			vscode.window.showInformationMessage('Cloc results updated!');
+			vscode.window.showInformationMessage('Finished counting!');
 		});
 
 		proc.on('error', (err) => {
