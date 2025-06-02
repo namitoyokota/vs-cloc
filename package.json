@@ -23,9 +23,19 @@
       },
       {
         "command": "vs-cloc.refreshCloc",
-        "title": "Refresh cloc results"
+        "title": "Refresh cloc results",
+        "icon": "$(refresh)"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "vs-cloc.refreshCloc",
+          "when": "view == vsClocSidebar",
+          "group": "navigation"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {

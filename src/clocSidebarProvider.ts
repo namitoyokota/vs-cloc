@@ -17,19 +17,9 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        // Add a refresh button at the top of the sidebar
+        // Remove the refresh button from the tree; use view/title button instead
         if (!element) {
-            const refreshItem = new vscode.TreeItem('Refresh', vscode.TreeItemCollapsibleState.None);
-            refreshItem.command = {
-                command: 'vs-cloc.refreshCloc',
-                title: 'Refresh cloc results',
-            };
-            refreshItem.tooltip = 'Re-run cloc and refresh results';
-            refreshItem.iconPath = new vscode.ThemeIcon('refresh');
-            return Promise.resolve([
-                refreshItem,
-                ...this.getClocItems()
-            ]);
+            return Promise.resolve(this.getClocItems());
         }
         return Promise.resolve([]);
     }
