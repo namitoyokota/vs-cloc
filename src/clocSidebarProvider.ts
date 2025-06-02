@@ -120,20 +120,20 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 	}
 
 	/**
-	 * Returns TreeItems for each language's file count, sorted descending, filtered if needed.
-	 * @returns Array of TreeItems for file counts.
+	 * Helper to filter and sort counts for files or lines.
+	 * @param counts The array of formatted count strings.
+	 * @param filter The filter string or undefined.
+	 * @param totalPattern Regex to match the total line (to exclude from filtering/sorting).
+	 * @param sortPattern Regex to extract the numeric value for sorting.
+	 * @returns Filtered and sorted array of count strings (excluding total).
 	 */
-	getFileCountItems(): vscode.TreeItem[] {
-		if (this.running || this.fileCounts.length === 0) {
-			return [];
-		}
+	private filterAndSortCounts(counts: string[], filter: string | undefined, totalPattern: RegExp, sortPattern: RegExp): string[] {
+		let filtered = counts.filter(l => !totalPattern.test(l));
 
-		let filtered = this.fileCounts.filter(l => !/^Total files:/i.test(l));
-
-		if (this.filter && this.filter.trim() !== '') {
-			const filterLower = this.filter.toLowerCase();
+		if (filter && filter.trim() !== '') {
+			const filterLower = filter.toLowerCase();
 			filtered = filtered.filter(line => {
-				const match = line.match(/^(.*?): (.*?) files?$/i);
+				const match = line.match(sortPattern);
 				if (match) {
 					return match[1].toLowerCase().includes(filterLower);
 				}
@@ -143,8 +143,8 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 		}
 
 		filtered.sort((a, b) => {
-			const aMatch = a.match(/^(.*?): ([\d,]+) files?$/i);
-			const bMatch = b.match(/^(.*?): ([\d,]+) files?$/i);
+			const aMatch = a.match(sortPattern);
+			const bMatch = b.match(sortPattern);
 
 			if (aMatch && bMatch) {
 				const aNum = parseInt(aMatch[2].replace(/,/g, ''));
@@ -155,25 +155,82 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 			return 0;
 		});
 
-		return filtered.map(line => {
-			const match = line.match(/^(.*?): (.*?) files?$/i);
-			let label = line, description = '';
+		return filtered;
+	}
 
-			if (match) {
-				label = match[1];
-				description = match[2] + ' files';
-			}
+	/**
+	 * Helper to create a TreeItem from a formatted count string.
+	 * @param line The formatted count string.
+	 * @param regex Regex to extract label and description.
+	 * @param suffix Suffix for the description (e.g., 'files', 'lines').
+	 * @param icon The icon to use for the item.
+	 * @returns A configured TreeItem.
+	 */
+	private createTreeItemFromLine(line: string, regex: RegExp, suffix: string, icon: ClocIcon): vscode.TreeItem {
+		const match = line.match(regex);
+		let label = line, description = '';
 
-			const item = new vscode.TreeItem(label);
-			item.description = description;
-			item.command = undefined;
+		if (match) {
+			label = match[1];
+			description = match[2] + ' ' + suffix;
+		}
 
-			if (label !== 'Total') {
-				item.iconPath = new vscode.ThemeIcon(ClocIcon.SymbolFile);
-			}
+		const item = new vscode.TreeItem(label);
+		item.description = description;
+		item.command = undefined;
 
-			return item;
-		});
+		if (label !== 'Total') {
+			item.iconPath = new vscode.ThemeIcon(icon);
+		}
+
+		return item;
+	}
+
+	/**
+	 * Helper to parse and populate fileCounts and lineCounts from cloc JSON result.
+	 * @param result The parsed cloc JSON result.
+	 */
+	private parseClocResult(result: any): void {
+		const formatNumber = (n: number) => n.toLocaleString();
+		this.fileCounts = [];
+		this.lineCounts = [];
+
+		Object.entries(result)
+			.filter(([key]) => key !== 'header' && key !== 'SUM')
+			.forEach(([lang, stats]) => {
+				this.fileCounts.push(`${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files`);
+				this.lineCounts.push(`${lang}: ${formatNumber((stats as any)['code'] ?? 0)} lines`);
+			});
+
+		if (result['SUM']) {
+			this.fileCounts.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}`);
+			this.lineCounts.push(`Total lines: ${formatNumber(result['SUM']['code'])}`);
+		}
+
+		if (this.fileCounts.length === 0 && this.lineCounts.length === 0) {
+			this.fileCounts = ['No code files found.'];
+		}
+	}
+
+	/**
+	 * Returns TreeItems for each language's file count, sorted descending, filtered if needed.
+	 * @returns Array of TreeItems for file counts.
+	 */
+	getFileCountItems(): vscode.TreeItem[] {
+		if (this.running || this.fileCounts.length === 0) {
+			return [];
+		}
+
+		const filtered = this.filterAndSortCounts(
+			this.fileCounts,
+			this.filter,
+			/^Total files:/i,
+			/^(.*?): ([\d,]+) files?$/i
+		);
+
+		return filtered.map(line =>
+			this.createTreeItemFromLine(line, /^(.*?): (.*?) files?$/i, 'files', ClocIcon.SymbolFile)
+		);
 	}
 
 	/**
@@ -185,51 +242,16 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 			return [];
 		}
 
-		let filtered = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
+		const filtered = this.filterAndSortCounts(
+			this.lineCounts,
+			this.filter,
+			/^Total lines:/i,
+			/^(.*?): ([\d,]+) lines?$/i
+		);
 
-		if (this.filter && this.filter.trim() !== '') {
-			const filterLower = this.filter.toLowerCase();
-			filtered = filtered.filter(line => {
-				const match = line.match(/^(.*?): (.*?) lines?$/i);
-				if (match) {
-					return match[1].toLowerCase().includes(filterLower);
-				}
-
-				return true;
-			});
-		}
-
-		filtered.sort((a, b) => {
-			const aMatch = a.match(/^(.*?): ([\d,]+) lines?$/i);
-			const bMatch = b.match(/^(.*?): ([\d,]+) lines?$/i);
-
-      if (aMatch && bMatch) {
-				const aNum = parseInt(aMatch[2].replace(/,/g, ''));
-				const bNum = parseInt(bMatch[2].replace(/,/g, ''));
-				return bNum - aNum;
-			}
-
-			return 0;
-		});
-
-		return filtered.map(line => {
-			const match = line.match(/^(.*?): (.*?) lines?$/i);
-			let label = line, description = '';
-
-			if (match) {
-				label = match[1];
-				description = match[2] + ' lines';
-			}
-
-			const item = new vscode.TreeItem(label);
-			item.description = description;
-			item.command = undefined;
-
-			if (label !== 'Total') {
-				item.iconPath = new vscode.ThemeIcon(ClocIcon.Note);
-			}
-			return item;
-		});
+		return filtered.map(line =>
+			this.createTreeItemFromLine(line, /^(.*?): (.*?) lines?$/i, 'lines', ClocIcon.Note)
+		);
 	}
 
 	/**
@@ -286,24 +308,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 				const jsonEnd = stdout.lastIndexOf('}') + 1;
 				const jsonStr = stdout.slice(0, jsonEnd);
 				const result = JSON.parse(jsonStr);
-				const formatNumber = (n: number) => n.toLocaleString();
-				this.fileCounts = [];
-				this.lineCounts = [];
-				Object.entries(result)
-					.filter(([key]) => key !== 'header' && key !== 'SUM')
-					.forEach(([lang, stats]) => {
-						this.fileCounts.push(`${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files`);
-						this.lineCounts.push(`${lang}: ${formatNumber((stats as any)['code'] ?? 0)} lines`);
-					});
-
-				if (result['SUM']) {
-					this.fileCounts.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}`);
-					this.lineCounts.push(`Total lines: ${formatNumber(result['SUM']['code'])}`);
-				}
-
-				if (this.fileCounts.length === 0 && this.lineCounts.length === 0) {
-					this.fileCounts = ['No code files found.'];
-				}
+				this.parseClocResult(result);
 			} catch (e) {
 				this.fileCounts = ['Error parsing counter:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
 				this.lineCounts = [];
