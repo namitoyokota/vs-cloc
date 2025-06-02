@@ -1,7 +1,7 @@
 {
-  "name": "vs-cloc",
-  "displayName": "vs-cloc",
-  "description": "VSCode extension for cloc (Count Line of Code).",
+  "name": "cloc",
+  "displayName": "CLOC",
+  "description": "VSCode extension for CLOC (Count Line of Code).",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.100.0"
@@ -12,21 +12,6 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "vs-cloc.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "vs-cloc.runCloc",
-        "title": "Run cloc and refresh sidebar"
-      },
-      {
-        "command": "vs-cloc.refreshCloc",
-        "title": "Refresh cloc results",
-        "icon": "$(refresh)"
-      }
-    ],
     "menus": {
       "view/title": [
         {
@@ -40,8 +25,8 @@
       "activitybar": [
         {
           "id": "vsClocSidebarContainer",
-          "title": "vs-cloc",
-          "icon": "resources/cloc.svg"
+          "title": "Lines of Code",
+          "icon": "resources/logo.svg"
         }
       ]
     },
@@ -49,7 +34,8 @@
       "vsClocSidebarContainer": [
         {
           "id": "vsClocSidebar",
-          "name": "CLOC Results"
+          "name": "Count",
+          "icon": "project"
         }
       ]
     }
