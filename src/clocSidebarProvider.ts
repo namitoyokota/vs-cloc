@@ -7,6 +7,8 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 
     private clocOutput: string[] = [];
     private running: boolean = false;
+    private fileCounts: string[] = [];
+    private lineCounts: string[] = [];
 
     constructor() {
         this.runCloc();
@@ -17,26 +19,40 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     }
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-        // If no element, return the root collapsible 'Files' item
+        // If no element, return the root collapsible 'Files' and 'Lines' items
         if (!element) {
             const filesRoot = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Expanded);
             filesRoot.id = 'filesRoot';
             filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
-            return Promise.resolve([filesRoot]);
+            // Use a built-in icon for lines section (e.g., 'symbol-method' for code)
+            const linesRoot = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.Expanded);
+            linesRoot.id = 'linesRoot';
+            linesRoot.iconPath = new vscode.ThemeIcon('symbol-method');
+            return Promise.resolve([filesRoot, linesRoot]);
         }
-        // If the element is the 'Files' root, return the cloc items
+        // If the element is the 'Files' root, return the file count items
         if (element.label === 'Files' && element.id === 'filesRoot') {
-            return Promise.resolve(this.getClocItems());
+            return Promise.resolve(this.getFileCountItems());
+        }
+        // If the element is the 'Lines' root, return the line count items
+        if (element.label === 'Lines' && element.id === 'linesRoot') {
+            return Promise.resolve(this.getLineCountItems());
         }
         return Promise.resolve([]);
     }
 
-    getClocItems(): vscode.TreeItem[] {
-        // Only show actual cloc results, not status messages
-        if (this.running || this.clocOutput.length === 0) {
+    getFileCountItems(): vscode.TreeItem[] {
+        if (this.running || this.fileCounts.length === 0) {
             return [];
         }
-        return this.clocOutput.map(line => new vscode.TreeItem(line));
+        return this.fileCounts.map(line => new vscode.TreeItem(line));
+    }
+
+    getLineCountItems(): vscode.TreeItem[] {
+        if (this.running || this.lineCounts.length === 0) {
+            return [];
+        }
+        return this.lineCounts.map(line => new vscode.TreeItem(line));
     }
 
     refresh(): void {
@@ -78,20 +94,27 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
                 const jsonEnd = stdout.lastIndexOf('}') + 1;
                 const jsonStr = stdout.slice(0, jsonEnd);
                 const result = JSON.parse(jsonStr);
-                // Simplified output: number of files and lines of code per file type, with commas
                 const formatNumber = (n: number) => n.toLocaleString();
-                this.clocOutput = Object.entries(result)
+                // Separate file and line counts for each language
+                this.fileCounts = [];
+                this.lineCounts = [];
+                Object.entries(result)
                     .filter(([key]) => key !== 'header' && key !== 'SUM')
-                    .map(([lang, stats]) => `${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files, ${formatNumber((stats as any)['code'] ?? 0)} lines`);
+                    .forEach(([lang, stats]) => {
+                        this.fileCounts.push(`${lang}: ${formatNumber((stats as any)['nFiles'] ?? 0)} files`);
+                        this.lineCounts.push(`${lang}: ${formatNumber((stats as any)['code'] ?? 0)} lines`);
+                    });
                 // Add summary if available
                 if (result['SUM']) {
-                    this.clocOutput.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}, Total lines: ${formatNumber(result['SUM']['code'])}`);
+                    this.fileCounts.push(`Total files: ${formatNumber(result['SUM']['nFiles'])}`);
+                    this.lineCounts.push(`Total lines: ${formatNumber(result['SUM']['code'])}`);
                 }
-                if (this.clocOutput.length === 0) {
-                    this.clocOutput = ['No code files found.'];
+                if (this.fileCounts.length === 0 && this.lineCounts.length === 0) {
+                    this.fileCounts = ['No code files found.'];
                 }
             } catch (e) {
-                this.clocOutput = ['Error parsing cloc output:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
+                this.fileCounts = ['Error parsing cloc output:', e instanceof Error ? e.message : String(e), 'Raw output:', stdout];
+                this.lineCounts = [];
             }
             this.refresh();
             vscode.window.showInformationMessage('Cloc results updated!');
