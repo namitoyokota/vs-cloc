@@ -9,6 +9,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
     private running: boolean = false;
     private fileCounts: string[] = [];
     private lineCounts: string[] = [];
+    private filter: string | undefined = undefined;
 
     constructor() {
         this.runCloc();
@@ -24,10 +25,10 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             const filesRoot = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Expanded);
             filesRoot.id = 'filesRoot';
             filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
-            // Use a built-in icon for lines section (e.g., 'symbol-method' for code)
+            // Use a built-in icon for lines section (e.g., 'note' for code)
             const linesRoot = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.Expanded);
             linesRoot.id = 'linesRoot';
-            linesRoot.iconPath = new vscode.ThemeIcon('symbol-method');
+            linesRoot.iconPath = new vscode.ThemeIcon('note');
             return Promise.resolve([filesRoot, linesRoot]);
         }
         // If the element is the 'Files' root, return the file count items
@@ -45,9 +46,42 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.fileCounts.length === 0) {
             return [];
         }
-        // Improved: parse fileCounts to label/description, non-clickable, non-selectable
-        return this.fileCounts.map(line => {
-            // Expecting format: "Language: 1,234 files" or "Total files: 1,234"
+        // Apply filter if set
+        let filtered = this.fileCounts;
+        if (this.filter && this.filter.trim() !== '') {
+            const filterLower = this.filter.toLowerCase();
+            filtered = filtered.filter(line => {
+                const match = line.match(/^(.*?): (.*?) files?$/i);
+                if (match) {
+                    return match[1].toLowerCase().includes(filterLower);
+                }
+                return true;
+            });
+            // Always include the Total line if present
+            const total = this.fileCounts.find(l => /^Total files:/i.test(l));
+            if (total && !filtered.includes(total)) {
+                filtered.push(total);
+            }
+        }
+        // Sort by file count descending, keep 'Total' at the end
+        const totalIdx = filtered.findIndex(l => /^Total files:/i.test(l));
+        let totalLine: string | undefined = undefined;
+        if (totalIdx !== -1) {
+            totalLine = filtered.splice(totalIdx, 1)[0];
+        }
+        filtered.sort((a, b) => {
+            const aMatch = a.match(/^(.*?): ([\d,]+) files?$/i);
+            const bMatch = b.match(/^(.*?): ([\d,]+) files?$/i);
+            if (aMatch && bMatch) {
+                const aNum = parseInt(aMatch[2].replace(/,/g, ''));
+                const bNum = parseInt(bMatch[2].replace(/,/g, ''));
+                return bNum - aNum;
+            }
+            return 0;
+        });
+        if (totalLine) { filtered.push(totalLine); }
+        return filtered.map(line => {
+            // Improved: parse fileCounts to label/description, non-clickable, non-selectable
             const match = line.match(/^(.*?): (.*?) files?$/i);
             let label = line, description = '';
             if (match) {
@@ -74,9 +108,42 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
         if (this.running || this.lineCounts.length === 0) {
             return [];
         }
-        // Improved: parse lineCounts to label/description, non-clickable, non-selectable
-        return this.lineCounts.map(line => {
-            // Expecting format: "Language: 1,234 lines" or "Total lines: 1,234"
+        // Apply filter if set
+        let filtered = this.lineCounts;
+        if (this.filter && this.filter.trim() !== '') {
+            const filterLower = this.filter.toLowerCase();
+            filtered = filtered.filter(line => {
+                const match = line.match(/^(.*?): (.*?) lines?$/i);
+                if (match) {
+                    return match[1].toLowerCase().includes(filterLower);
+                }
+                return true;
+            });
+            // Always include the Total line if present
+            const total = this.lineCounts.find(l => /^Total lines:/i.test(l));
+            if (total && !filtered.includes(total)) {
+                filtered.push(total);
+            }
+        }
+        // Sort by line count descending, keep 'Total' at the end
+        const totalIdx = filtered.findIndex(l => /^Total lines:/i.test(l));
+        let totalLine: string | undefined = undefined;
+        if (totalIdx !== -1) {
+            totalLine = filtered.splice(totalIdx, 1)[0];
+        }
+        filtered.sort((a, b) => {
+            const aMatch = a.match(/^(.*?): ([\d,]+) lines?$/i);
+            const bMatch = b.match(/^(.*?): ([\d,]+) lines?$/i);
+            if (aMatch && bMatch) {
+                const aNum = parseInt(aMatch[2].replace(/,/g, ''));
+                const bNum = parseInt(bMatch[2].replace(/,/g, ''));
+                return bNum - aNum;
+            }
+            return 0;
+        });
+        if (totalLine) { filtered.push(totalLine); }
+        return filtered.map(line => {
+            // Improved: parse lineCounts to label/description, non-clickable, non-selectable
             const match = line.match(/^(.*?): (.*?) lines?$/i);
             let label = line, description = '';
             if (match) {
@@ -93,10 +160,20 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
             item.command = undefined;
             // Optionally, add a code icon for each language (skip for Total)
             if (label !== 'Total') {
-                item.iconPath = new vscode.ThemeIcon('symbol-method');
+                item.iconPath = new vscode.ThemeIcon('note');
             }
             return item;
         });
+    }
+
+    setFilter(filter: string | undefined) {
+        this.filter = filter;
+        this.refresh();
+    }
+
+    clearFilter() {
+        this.filter = undefined;
+        this.refresh();
     }
 
     refresh(): void {
