@@ -21,31 +21,31 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 
     getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
         if (!element) {
-            const tottalRoot = new vscode.TreeItem('Tottal', vscode.TreeItemCollapsibleState.Expanded);
-            tottalRoot.id = 'tottalRoot';
-            tottalRoot.iconPath = new vscode.ThemeIcon('repo');
+            const totalRoot = new vscode.TreeItem('Total', vscode.TreeItemCollapsibleState.Expanded);
+            totalRoot.id = 'totalRoot';
+            totalRoot.iconPath = new vscode.ThemeIcon('repo');
             const filesRoot = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.Expanded);
             filesRoot.id = 'filesRoot';
             filesRoot.iconPath = new vscode.ThemeIcon('file-directory');
             const linesRoot = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.Expanded);
             linesRoot.id = 'linesRoot';
             linesRoot.iconPath = new vscode.ThemeIcon('file-code');
-            return Promise.resolve([tottalRoot, filesRoot, linesRoot]);
+            return Promise.resolve([totalRoot, filesRoot, linesRoot]);
         }
-        if (element.label === 'Tottal' && element.id === 'tottalRoot') {
+        if (element.label === 'Total' && element.id === 'totalRoot') {
             const totalFiles = this.fileCounts.find(l => /^Total files:/i.test(l));
             const totalLines = this.lineCounts.find(l => /^Total lines:/i.test(l));
             const filesProp = new vscode.TreeItem(
                 `Files: ${totalFiles ? totalFiles.replace(/^Total files: /i, '') : '0'}`,
                 vscode.TreeItemCollapsibleState.None
             );
-            filesProp.id = 'tottalFiles';
+            filesProp.id = 'totalFiles';
             filesProp.iconPath = new vscode.ThemeIcon('file-directory');
             const linesProp = new vscode.TreeItem(
                 `Lines: ${totalLines ? totalLines.replace(/^Total lines: /i, '') : '0'}`,
                 vscode.TreeItemCollapsibleState.None
             );
-            linesProp.id = 'tottalLines';
+            linesProp.id = 'totalLines';
             linesProp.iconPath = new vscode.ThemeIcon('file-code');
             return Promise.resolve([filesProp, linesProp]);
         }
