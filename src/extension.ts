@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const refreshDisposable = vscode.commands.registerCommand('vs-cloc.refresh', () => {
 		sidebarProvider.countLinesOfCode();
-		vscode.window.showInformationMessage('Finished counting lines of code.');
+		vscode.window.showInformationMessage('Re-counting lines of code.');
 	});
 	context.subscriptions.push(refreshDisposable);
 }
