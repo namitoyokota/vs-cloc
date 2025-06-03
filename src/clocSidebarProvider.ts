@@ -273,10 +273,6 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 	 * Refreshes the TreeView.
 	 */
 	refresh(): void {
-		this.fileCounts = this.fileCounts.filter(l => !/^Total files:/i.test(l));
-		this.lineCounts = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
-		this.fileCounts.push('Total files: 0');
-		this.lineCounts.push('Total lines: 0');
 		this._onDidChangeTreeData.fire();
 	}
 
@@ -284,6 +280,12 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 	 * Runs cloc in the workspace and updates file/line counts.
 	 */
 	countLinesOfCode() {
+		this.fileCounts = this.fileCounts.filter(l => !/^Total files:/i.test(l));
+		this.lineCounts = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
+		this.fileCounts.push('Total files: 0');
+		this.lineCounts.push('Total lines: 0');
+		this.refresh();
+
 		const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		if (!workspaceFolder) {
 			this.clocOutput = ['No workspace folder found. Please open a folder in VS Code.'];
