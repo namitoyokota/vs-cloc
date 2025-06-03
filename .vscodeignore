@@ -6,3 +6,5 @@ src/**
 **/eslint.config.mjs
 **/*.map
 **/*.ts
+*.vsix
+*.jpeg
