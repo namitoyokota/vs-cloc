@@ -63,5 +63,9 @@
     "cloc": "^2.4.0-cloc",
     "eslint": "^9.25.1",
     "typescript": "^5.8.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/namitoyokota/vs-cloc.git"
   }
 }
