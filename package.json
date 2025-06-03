@@ -12,6 +12,13 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "vs-cloc.refreshCloc",
+        "title": "Refresh cloc results",
+        "icon": "$(refresh)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
