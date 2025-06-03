@@ -11,15 +11,15 @@ export function activate(context: vscode.ExtensionContext) {
 	const sidebarProvider = new ClocSidebarProvider();
 	vscode.window.registerTreeDataProvider('vsClocSidebar', sidebarProvider);
 
-	const runClocDisposable = vscode.commands.registerCommand('vs-cloc.runCloc', () => {
-		sidebarProvider.runCloc();
-		vscode.window.showInformationMessage('Counting lines of code...');
+	const countLinesOfCodeDisposable = vscode.commands.registerCommand('vs-cloc.countLinesOfCode', () => {
+		sidebarProvider.countLinesOfCode();
+		vscode.window.showInformationMessage('Counting lines of code.');
 	});
-	context.subscriptions.push(runClocDisposable);
+	context.subscriptions.push(countLinesOfCodeDisposable);
 
-	const refreshClocDisposable = vscode.commands.registerCommand('vs-cloc.refreshCloc', () => {
-		sidebarProvider.runCloc();
-		vscode.window.showInformationMessage('Finished counting!');
+	const refreshDisposable = vscode.commands.registerCommand('vs-cloc.refresh', () => {
+		sidebarProvider.countLinesOfCode();
+		vscode.window.showInformationMessage('Finished counting lines of code.');
 	});
-	context.subscriptions.push(refreshClocDisposable);
+	context.subscriptions.push(refreshDisposable);
 }

@@ -53,7 +53,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 	private filter: string | undefined = undefined;
 
 	constructor() {
-		this.runCloc();
+		this.countLinesOfCode();
 	}
 
 	/**
@@ -91,19 +91,17 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 			const totalFiles = this.fileCounts.find(l => /^Total files:/i.test(l));
 			const totalLines = this.lineCounts.find(l => /^Total lines:/i.test(l));
 
-			const filesProp = new vscode.TreeItem(
-				`Files: ${totalFiles ? totalFiles.replace(/^Total files: /i, '') : '0'}`,
-				vscode.TreeItemCollapsibleState.None
-			);
+			const filesValue = totalFiles ? totalFiles.replace(/^Total files: /i, '') : '0';
+			const filesProp = new vscode.TreeItem('Files', vscode.TreeItemCollapsibleState.None);
 			filesProp.id = ClocTree.TotalFilesId;
 			filesProp.iconPath = new vscode.ThemeIcon(ClocIcon.FileDirectory);
+			filesProp.description = filesValue + ' files';
 
-			const linesProp = new vscode.TreeItem(
-				`Lines: ${totalLines ? totalLines.replace(/^Total lines: /i, '') : '0'}`,
-				vscode.TreeItemCollapsibleState.None
-			);
+			const linesValue = totalLines ? totalLines.replace(/^Total lines: /i, '') : '0';
+			const linesProp = new vscode.TreeItem('Lines', vscode.TreeItemCollapsibleState.None);
 			linesProp.id = ClocTree.TotalLinesId;
 			linesProp.iconPath = new vscode.ThemeIcon(ClocIcon.FileCode);
+			linesProp.description = linesValue + ' lines';
 
 			return Promise.resolve([filesProp, linesProp]);
 		}
@@ -275,13 +273,17 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 	 * Refreshes the TreeView.
 	 */
 	refresh(): void {
+		this.fileCounts = this.fileCounts.filter(l => !/^Total files:/i.test(l));
+		this.lineCounts = this.lineCounts.filter(l => !/^Total lines:/i.test(l));
+		this.fileCounts.push('Total files: 0');
+		this.lineCounts.push('Total lines: 0');
 		this._onDidChangeTreeData.fire();
 	}
 
 	/**
 	 * Runs cloc in the workspace and updates file/line counts.
 	 */
-	runCloc() {
+	countLinesOfCode() {
 		const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 		if (!workspaceFolder) {
 			this.clocOutput = ['No workspace folder found. Please open a folder in VS Code.'];
@@ -315,7 +317,7 @@ export class ClocSidebarProvider implements vscode.TreeDataProvider<vscode.TreeI
 			}
 
 			this.refresh();
-			vscode.window.showInformationMessage('Finished counting!');
+			vscode.window.showInformationMessage('Finished counting lines of code.');
 		});
 
 		proc.on('error', (err) => {

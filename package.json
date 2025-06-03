@@ -2,7 +2,7 @@
   "name": "cloc",
   "displayName": "CLOC",
   "description": "VSCode extension for CLOC (Count Line of Code).",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -14,7 +14,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "vs-cloc.refreshCloc",
+        "command": "vs-cloc.refresh",
         "title": "Refresh cloc results",
         "icon": "$(refresh)"
       }
@@ -22,7 +22,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "vs-cloc.refreshCloc",
+          "command": "vs-cloc.refresh",
           "when": "view == vsClocSidebar",
           "group": "navigation"
         }
