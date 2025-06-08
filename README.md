@@ -2,7 +2,7 @@
 
 A VSCode extension that displays CLOC (Count Lines of Code) results in a sidebar TreeView.
 
-![Sidebar screenshot](screenshot.jpeg)
+![Sidebar screenshot](./images/thumbnail.png)
 
 ## Features
 - Runs cloc and shows results in a collapsible sidebar
