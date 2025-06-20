@@ -19,3 +19,6 @@ A VSCode extension that displays CLOC (Count Lines of Code) results in a sidebar
 
 ## Usage
 Open the sidebar (look for the vs-cloc icon) to view code statistics. No configuration required.
+
+## Disclaimer
+This project was developed in hopes of learning how to "vibe code." I did not write a single line of code, nor have any idea what it does.
