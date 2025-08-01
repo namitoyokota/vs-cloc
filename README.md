@@ -13,6 +13,8 @@ A VSCode extension that displays CLOC (Count Lines of Code) results in a sidebar
 
 ## Installation
 
+> For Windows, make sure Perl is installed. Otherwise, use [this guide](https://learn.perl.org/installing/windows.html).
+
 1. Install vsce: `npm install -g vsce`.
 2. Build executable: `vsce package`.
 3. Right click on the generated file in VSCode -> **Install Extension VSIX**.
